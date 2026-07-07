@@ -1,0 +1,503 @@
+==========================================================
+Document Comparison System
+Development Log
+Author: Azzouz
+==========================================================
+
+Date: 07/07/2026
+
+OBJECTIVE
+---------
+Start the implementation of the Document Comparison System
+following the architecture defined in the design document.
+
+==========================================================
+STEP 1 - PROJECT INITIALIZATION
+==========================================================
+
+✓ Created Git repository.
+
+✓ Connected the project to GitHub.
+
+Repository:
+https://github.com/Azza-khe/Document-Comparison-System
+
+✓ Created and activated Python virtual environment (venv).
+
+Commands:
+
+python -m venv venv
+
+Windows:
+venv\Scripts\activate
+
+==========================================================
+STEP 2 - BACKEND INITIALIZATION
+==========================================================
+
+Created backend folder.
+
+Created FastAPI project structure.
+
+Current architecture:
+
+backend/
+│
+├── app/
+│   ├── api/
+│   ├── core/
+│   ├── models/
+│   ├── schemas/
+│   └── services/
+│
+├── requirements.txt
+└── .env
+
+==========================================================
+STEP 3 - DEPENDENCIES
+==========================================================
+
+Created requirements.txt.
+
+Main libraries:
+
+- FastAPI
+- Uvicorn
+- Pydantic
+- python-multipart
+- PyMuPDF
+- pdf2image
+- Pillow
+- OpenCV
+- pytesseract
+- SQLAlchemy
+- psycopg2-binary
+- python-dotenv
+
+Installed packages using:
+
+pip install -r requirements.txt
+
+==========================================================
+STEP 4 - FASTAPI
+==========================================================
+
+Created:
+
+app/main.py
+
+Created first endpoint:
+
+GET /
+
+Response:
+
+{
+    "message": "Document Processing API running"
+}
+
+Started server using:
+
+uvicorn app.main:app --reload
+
+Swagger available at:
+
+http://127.0.0.1:8000/docs
+
+==========================================================
+STEP 5 - GIT
+==========================================================
+
+Saved project state.
+
+Commands:
+
+git add .
+
+git commit -m "Create FastAPI backend structure"
+
+git push
+
+Repository is synchronized with GitHub.
+
+==========================================================
+STEP 6 - LAYER 0 ANALYSIS (INGESTION)
+==========================================================
+
+Studied the first layer of the architecture.
+
+Purpose:
+
+Receive uploaded PDF files before any processing.
+
+Responsibilities:
+
+- Validate uploaded file
+- Verify PDF extension
+- Reject invalid files
+- Generate unique Job ID
+- Store original PDF
+- Return Job ID to client
+
+Pipeline:
+
+Client
+   │
+Upload PDF
+   │
+Validation
+   │
+Job creation
+   │
+Store original PDF
+   │
+Return Job ID
+
+==========================================================
+JOB CONCEPT
+==========================================================
+
+A Job represents one document processing request.
+
+Each uploaded PDF receives a unique identifier (UUID).
+
+Example:
+
+Job
+---------------------------
+job_id
+filename
+status
+created_at
+
+Future status values:
+
+RECEIVED
+ANALYZING
+CLASSIFYING
+EXTRACTING
+VALIDATING
+MATCHING
+COMPLETED
+FAILED
+
+==========================================================
+PDF STORAGE
+==========================================================
+
+Initial idea:
+
+Local storage:
+
+backend/storage/uploads/
+
+Final architecture:
+
+FastAPI
+    │
+Validation
+    │
+MinIO Object Storage
+    │
+Original PDF stored
+    │
+PostgreSQL stores metadata only
+
+==========================================================
+MINIO
+==========================================================
+
+Decision:
+
+Use MinIO instead of local storage.
+
+Reason:
+
+- S3 compatible
+- Production-like architecture
+- Better separation between files and database
+- Easy migration to AWS S3 later
+
+Current status:
+
+Downloading and configuring MinIO.
+
+Pending:
+
+- Install minio.exe
+- Create C:\minio
+- Create bucket "documents"
+- Connect FastAPI to MinIO
+
+==========================================================
+NEXT STEP
+==========================================================
+
+Finish MinIO installation.
+
+Then implement Layer 0:
+
+1. upload.py
+2. ingestion.py
+3. storage.py (MinIO)
+4. Job model
+5. Upload endpoint
+6. Save PDF into MinIO
+7. Return job_id
+
+==========================================================
+==========================================================
+STEP 7 - PROJECT EXECUTION GUIDE
+==========================================================
+
+Every time the computer is restarted:
+
+1. Open the project
+
+cd C:\Users\DELL\Documents\Document-Comparison-System
+
+2. Activate the virtual environment
+
+venv\Scripts\activate
+
+You should see:
+
+(venv)
+
+3. Start FastAPI
+
+cd backend
+
+uvicorn app.main:app --reload
+
+API:
+
+http://127.0.0.1:8000
+
+Swagger:
+
+http://127.0.0.1:8000/docs
+
+
+4. Start MinIO
+
+Open another terminal.
+
+cd C:\minio
+
+minio.exe server data --console-address ":9001"
+
+MinIO API:
+
+http://127.0.0.1:9000
+
+MinIO Console:
+
+http://127.0.0.1:9001
+
+Login using the configured credentials.
+
+==========================================================
+CURRENT PROJECT SERVICES
+==========================================================
+
+Service                  Port      Status
+
+FastAPI                  8000      ✓ Running
+Swagger                  8000      ✓ Running
+MinIO API                9000      ✓ Running
+MinIO Console            9001      ✓ Running
+PostgreSQL               5432      Planned
+Redis                    6379      Planned
+Celery Worker            ----      Planned
+
+==========================================================
+CURRENT STORAGE ARCHITECTURE
+==========================================================
+
+MinIO Bucket
+
+documents/
+
+Current structure
+
+documents/
+    job_id_1/
+        original.pdf
+
+    job_id_2/
+        original.pdf
+
+    job_id_3/
+        original.pdf
+
+At this stage only the original uploaded PDF is stored.
+
+==========================================================
+FUTURE STORAGE ARCHITECTURE
+==========================================================
+
+documents/
+
+    pdfs/
+        job_id/
+            original.pdf
+
+    pages/
+        job_id/
+            page_001.png
+            page_002.png
+            page_003.png
+
+The original PDF remains immutable.
+
+The pages folder will contain:
+
+- Original rendered pages for native PDFs.
+
+- OpenCV preprocessed pages for scanned PDFs.
+
+All later layers (Classification, OCR, Extraction, Matching)
+will work only on the pages folder.
+
+==========================================================
+CELERY & REDIS ROADMAP
+==========================================================
+
+Celery and Redis are intentionally NOT integrated yet.
+
+Current workflow
+
+Upload
+    │
+Validation
+    │
+Save Original PDF
+    │
+Return Job ID
+
+Future workflow
+
+Upload
+    │
+Validation
+    │
+Save Original PDF
+    │
+Create Celery Task
+    │
+Redis Queue
+    │
+Celery Worker
+    │
+Layer 1
+Layer 2
+Layer 3
+...
+Layer 9
+
+Reason:
+
+The upload process must be stable before introducing
+background asynchronous processing.
+
+==========================================================
+END OF LAYER 0
+==========================================================
+
+Layer 0 objectives completed:
+
+✓ Project initialized
+
+✓ FastAPI running
+
+✓ Git repository connected
+
+✓ Dependencies installed
+
+✓ MinIO selected as object storage
+
+✓ Layer 0 architecture defined
+
+Next action:
+
+Create a Git checkpoint before starting Layer 1.
+
+Commands:
+
+git add .
+
+git commit -m "Complete Layer 0 architecture"
+
+git push
+
+==========================================================
+NEXT DEVELOPMENT PHASE
+==========================================================
+
+Layer 1 — PDF Analysis
+
+Goals:
+
+1. Open uploaded PDF using PyMuPDF.
+
+2. Count total pages.
+
+3. Detect whether each page is:
+
+   - Native PDF
+
+   - Scanned PDF
+
+4. Render every page into PNG.
+
+5. Save pages inside:
+
+documents/
+
+    pages/
+
+        job_id/
+
+            page_001.png
+
+            page_002.png
+
+            ...
+
+6. Generate metadata for every page:
+
+- page_number
+
+- image_path
+
+- source_type (NATIVE / SCANNED)
+
+- width
+
+- height
+
+- character_count
+
+- image_ratio
+
+Output:
+
+The PDF is transformed into a collection of pages ready
+for preprocessing, classification and OCR.
+
+==========================================================
+NEXT MAJOR MILESTONE
+==========================================================
+
+After Layer 1 is fully tested:
+
+1. Introduce Redis.
+
+2. Introduce Celery.
+
+3. Move PDF analysis into background workers.
+
+4. Continue with Layer 2 (OpenCV preprocessing).
+
+==========================================================
