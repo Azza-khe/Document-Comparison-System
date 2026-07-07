@@ -1,0 +1,25 @@
+# Environnement
+.env
+backend/.env
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# Docker
+postgres_data/
+minio_data/
+
+# Node / React
+node_modules/
+build/
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# Fichiers uploadés en local (si stockage temporaire)
+uploads/
