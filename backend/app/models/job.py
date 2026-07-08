@@ -1,5 +1,6 @@
-from sqlalchemy import Column, String
+from sqlalchemy import Column, String, DateTime
 from sqlalchemy.orm import relationship
+from datetime import datetime
 
 from app.core.database import Base
 
@@ -7,7 +8,7 @@ from app.core.database import Base
 
 class Job(Base):
 
-    __tablename__="jobs"
+    __tablename__ = "jobs"
 
 
     job_id = Column(
@@ -33,6 +34,11 @@ class Job(Base):
         default="UPLOADED"
     )
 
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
 
 
     pages = relationship(

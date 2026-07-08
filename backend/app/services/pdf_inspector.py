@@ -8,10 +8,10 @@ def inspect_pdf(pdf_path):
     document = fitz.open(pdf_path)
 
 
-    pages=[]
+    pages = []
 
 
-    for index,page in enumerate(document):
+    for index, page in enumerate(document):
 
 
         text = page.get_text()
@@ -31,9 +31,47 @@ def inspect_pdf(pdf_path):
 
 
 
-        if image_count > 0:
+        page_area = (
+            page.rect.width *
+            page.rect.height
+        )
 
-            image_ratio = 0.8
+
+        image_area = 0
+
+
+
+        for img in images:
+
+            xref = img[0]
+
+
+            try:
+
+                pix = fitz.Pixmap(
+                    document,
+                    xref
+                )
+
+
+                image_area += (
+                    pix.width *
+                    pix.height
+                )
+
+
+            except Exception:
+
+                pass
+
+
+
+        if page_area > 0:
+
+            image_ratio = (
+                image_area /
+                page_area
+            )
 
         else:
 
@@ -41,12 +79,14 @@ def inspect_pdf(pdf_path):
 
 
 
-        if character_count > 50:
+        # Classification Native / Scanned
+
+        if (
+            character_count > 50
+            and image_ratio < 0.3
+        ):
 
             source_type = "NATIVE"
-
-
-        
 
 
         else:
@@ -74,7 +114,6 @@ def inspect_pdf(pdf_path):
             "raw_text": text
 
         })
-
 
 
     document.close()
