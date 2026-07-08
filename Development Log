@@ -501,3 +501,98 @@ After Layer 1 is fully tested:
 4. Continue with Layer 2 (OpenCV preprocessing).
 
 ==========================================================
+==========================================================
+STEP 8.1 - PAGE MODEL
+==========================================================
+
+Created:
+
+app/models/page.py
+
+Purpose
+
+Represent one analyzed PDF page inside the backend.
+
+Stored information
+
+- page_number
+- source_type
+- char_count
+- image_count
+- image_coverage_ratio
+- width
+- height
+- raw_text
+
+==========================================================
+STEP 8.2 - PAGE SCHEMA
+==========================================================
+
+Created:
+
+app/schemas/page_schema.py
+
+Purpose
+
+Expose analyzed page information through the FastAPI API.
+
+The schema mirrors the Page model and will later be returned by the Layer 1 endpoint.
+==========================================================
+STEP 8.3 - PDF ANALYZER
+==========================================================
+
+Created:
+
+app/services/pdf_analyzer.py
+
+Purpose
+
+Analyze every page of the uploaded PDF.
+
+Responsibilities
+
+- Open PDF using PyMuPDF.
+- Count pages.
+- Extract native text.
+- Count characters.
+- Compute image coverage ratio.
+- Detect page type:
+    • NATIVE
+    • SCANNED
+    • UNKNOWN
+
+Output
+
+One Page object is produced for every PDF page.
+
+==========================================================
+STEP 8.4 - PAGE RENDERER
+==========================================================
+
+Created:
+
+app/services/page_renderer.py
+
+Purpose
+
+Convert every PDF page into a PNG image.
+
+Responsibilities
+
+- Render pages at 300 DPI.
+- Save page images.
+- Create the pages folder for each job.
+
+Output
+
+documents/
+
+    pages/
+
+        job_id/
+
+            page_001.png
+            page_002.png
+            ...
+
+These images will become the common input for all subsequent layers of the pipeline.
