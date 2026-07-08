@@ -1,16 +1,45 @@
+from sqlalchemy import Column
+from sqlalchemy import Integer
+from sqlalchemy import String
+from sqlalchemy import DateTime
+
 from datetime import datetime
-from uuid import UUID
+
+from app.core.database import Base
 
 
-class Job:
+class Job(Base):
 
-    def __init__(
-        self,
-        job_id: UUID,
-        filename: str,
-        status: str = "RECEIVED"
-    ):
-        self.job_id = job_id
-        self.filename = filename
-        self.status = status
-        self.created_at = datetime.now()
+    __tablename__ = "jobs"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
+
+    job_id = Column(
+        String,
+        unique=True,
+        nullable=False
+    )
+
+    filename = Column(
+        String,
+        nullable=False
+    )
+
+    object_name = Column(
+        String,
+        nullable=False
+    )
+
+    status = Column(
+        String,
+        default="RECEIVED"
+    )
+
+    created_at = Column(
+        DateTime,
+        default=datetime.utcnow
+    )
