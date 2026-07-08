@@ -1,20 +1,87 @@
-from dataclasses import dataclass
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Float,
+    ForeignKey,
+    Text
+)
+
+from sqlalchemy.orm import relationship
+
+from app.core.database import Base
 
 
-@dataclass
-class Page:
-    page_number: int
 
-    source_type: str
+class Page(Base):
 
-    char_count: int
+    __tablename__ = "pages"
 
-    image_count: int
 
-    image_coverage: float
+    id = Column(
+        Integer,
+        primary_key=True,
+        index=True
+    )
 
-    width: float
 
-    height: float
+    job_id = Column(
+        String,
+        ForeignKey("jobs.job_id"),
+        nullable=False
+    )
 
-    text: str
+
+    page_number = Column(
+        Integer,
+        nullable=False
+    )
+
+
+    source_type = Column(
+        String,
+        nullable=False
+    )
+
+
+    character_count = Column(
+        Integer
+    )
+
+
+    image_count = Column(
+        Integer
+    )
+
+
+    image_ratio = Column(
+        Float
+    )
+
+
+    width = Column(
+        Float
+    )
+
+
+    height = Column(
+        Float
+    )
+
+
+    image_path = Column(
+        String
+    )
+
+
+    raw_text = Column(
+        Text
+    )
+
+
+    # Relation avec Job
+
+    job = relationship(
+        "Job",
+        back_populates="pages"
+    )

@@ -1,20 +1,26 @@
 from pydantic import BaseModel
 
 
-class PageSchema(BaseModel):
 
-    page_number: int
+class PageResponse(BaseModel):
 
-    source_type: str
+    page_number:int
 
-    char_count: int
+    source_type:str
 
-    image_count: int
+    character_count:int
 
-    image_coverage: float
+    image_count:int
 
-    width: float
+    image_ratio:float
 
-    height: float
+    width:float
 
-    text: str
+    height:float
+
+    image_path:str
+
+
+    class Config:
+
+        from_attributes=True

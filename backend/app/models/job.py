@@ -1,45 +1,42 @@
-from sqlalchemy import Column
-from sqlalchemy import Integer
-from sqlalchemy import String
-from sqlalchemy import DateTime
-
-from datetime import datetime
+from sqlalchemy import Column, String
+from sqlalchemy.orm import relationship
 
 from app.core.database import Base
 
 
+
 class Job(Base):
 
-    __tablename__ = "jobs"
+    __tablename__="jobs"
 
-    id = Column(
-        Integer,
-        primary_key=True,
-        index=True
-    )
 
     job_id = Column(
         String,
-        unique=True,
-        nullable=False
+        primary_key=True
     )
+
 
     filename = Column(
         String,
         nullable=False
     )
 
+
     object_name = Column(
         String,
         nullable=False
     )
 
+
     status = Column(
         String,
-        default="RECEIVED"
+        default="UPLOADED"
     )
 
-    created_at = Column(
-        DateTime,
-        default=datetime.utcnow
+
+
+    pages = relationship(
+        "Page",
+        back_populates="job",
+        cascade="all, delete"
     )

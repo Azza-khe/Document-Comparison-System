@@ -307,66 +307,240 @@ FastAPI                  8000      ✓ Running
 Swagger                  8000      ✓ Running
 MinIO API                9000      ✓ Running
 MinIO Console            9001      ✓ Running
-PostgreSQL               5432      Planned
+PostgreSQL               5432      ✓ Running
 Redis                    6379      Planned
 Celery Worker            ----      Planned
+
+
+==========================================================
+DATABASE IMPLEMENTATION
+==========================================================
+
+PostgreSQL was integrated into the backend.
+
+Purpose:
+
+Store processing metadata and job history.
+
+Current database entity:
+
+Job
+
+Fields:
+
+- job_id
+- filename
+- object_name
+- status
+- created_at
+
+
+Database connection:
+
+SQLAlchemy
++
+psycopg2-binary
+
+
+Environment configuration:
+
+.env
+
+Contains:
+
+- DATABASE_URL
+- MinIO configuration
+
+
+Database visualization:
+
+The jobs table was successfully created
+and verified using pgAdmin.
+
+
+==========================================================
+LAYER 0 - INGESTION IMPLEMENTATION
+==========================================================
+
+Layer 0 implementation completed.
+
+Final pipeline:
+
+Client
+   │
+POST /upload
+   │
+PDF validation
+   │
+Generate UUID job_id
+   │
+Upload PDF to MinIO
+   │
+Save metadata in PostgreSQL
+   │
+Return job information
+
+
+Implemented components:
+
+
+1. Upload API
+
+Created:
+
+app/api/upload.py
+
+
+Responsibilities:
+
+- Receive PDF file
+- Call validation service
+- Create processing job
+- Return job information
+
+
+----------------------------------------------------------
+
+
+2. Ingestion Service
+
+Created:
+
+app/services/ingestion.py
+
+
+Responsibilities:
+
+- Validate PDF extension
+- Check maximum file size
+- Generate unique identifier
+- Upload PDF to MinIO
+- Create Job entry in PostgreSQL
+
+
+----------------------------------------------------------
+
+
+3. MinIO Storage Service
+
+Created:
+
+app/services/storage.py
+
+
+Responsibilities:
+
+- Connect FastAPI with MinIO
+- Upload original PDF
+- Store documents in object storage
+
+
+----------------------------------------------------------
+
+
+4. Job Database Model
+
+Created:
+
+app/models/job.py
+
+
+Purpose:
+
+Represent one document processing request.
+
+
+Example:
+
+Job
+---------------------------
+job_id
+filename
+object_name
+status
+created_at
+
+
+Status lifecycle:
+
+RECEIVED
+ANALYZING
+CLASSIFYING
+EXTRACTING
+VALIDATING
+MATCHING
+COMPLETED
+FAILED
+
+
+==========================================================
+LAYER 0 TESTING
+==========================================================
+
+Upload endpoint tested successfully.
+
+
+Test:
+
+Swagger:
+
+http://127.0.0.1:8000/docs
+
+
+Result:
+
+
+{
+    "message": "PDF received successfully",
+    "job_id": "...",
+    "status": "RECEIVED"
+}
+
+
+Verification:
+
+
+✓ PDF uploaded successfully to MinIO
+
+✓ Job inserted successfully into PostgreSQL
+
+✓ Job visible from pgAdmin
+
+✓ Metadata correctly stored
+
 
 ==========================================================
 CURRENT STORAGE ARCHITECTURE
 ==========================================================
 
-MinIO Bucket
+MinIO Bucket:
 
 documents/
 
-Current structure
 
-documents/
-    job_id_1/
-        original.pdf
+Current structure:
 
-    job_id_2/
-        original.pdf
-
-    job_id_3/
-        original.pdf
-
-At this stage only the original uploaded PDF is stored.
-
-==========================================================
-FUTURE STORAGE ARCHITECTURE
-==========================================================
 
 documents/
 
-    pdfs/
-        job_id/
-            original.pdf
+    job_id_xxxxx/
 
-    pages/
-        job_id/
-            page_001.png
-            page_002.png
-            page_003.png
+        original.pdf
 
-The original PDF remains immutable.
 
-The pages folder will contain:
 
-- Original rendered pages for native PDFs.
+The original PDF is stored as an immutable source file.
 
-- OpenCV preprocessed pages for scanned PDFs.
-
-All later layers (Classification, OCR, Extraction, Matching)
-will work only on the pages folder.
 
 ==========================================================
 CELERY & REDIS ROADMAP
 ==========================================================
 
-Celery and Redis are intentionally NOT integrated yet.
+Celery and Redis are intentionally not integrated yet.
 
-Current workflow
+
+Current workflow:
+
 
 Upload
     │
@@ -374,9 +548,13 @@ Validation
     │
 Save Original PDF
     │
+Insert Job in PostgreSQL
+    │
 Return Job ID
 
-Future workflow
+
+Future workflow:
+
 
 Upload
     │
@@ -396,194 +574,275 @@ Layer 3
 ...
 Layer 9
 
+
 Reason:
 
-The upload process must be stable before introducing
-background asynchronous processing.
+The synchronous ingestion pipeline must be stable
+before introducing asynchronous processing.
+
 
 ==========================================================
 END OF LAYER 0
 ==========================================================
 
+
 Layer 0 objectives completed:
+
 
 ✓ Project initialized
 
-✓ FastAPI running
+✓ FastAPI backend created
 
 ✓ Git repository connected
 
 ✓ Dependencies installed
 
-✓ MinIO selected as object storage
+✓ MinIO integrated
 
-✓ Layer 0 architecture defined
+✓ PostgreSQL integrated
 
-Next action:
+✓ Job model created
 
-Create a Git checkpoint before starting Layer 1.
+✓ Upload endpoint implemented
+
+✓ PDF upload tested
+
+✓ Metadata stored successfully
+
+
+==========================================================
+GIT CHECKPOINT
+==========================================================
+
+Before starting Layer 1, project state is saved.
+
 
 Commands:
 
+
 git add .
 
-git commit -m "Complete Layer 0 architecture"
+
+git commit -m "Complete Layer 0 ingestion pipeline with MinIO and PostgreSQL"
+
 
 git push
+
 
 ==========================================================
 NEXT DEVELOPMENT PHASE
 ==========================================================
 
-Layer 1 — PDF Analysis
+Layer 1 — PDF Inspector (Restarted Clean Implementation)
 
-Goals:
 
-1. Open uploaded PDF using PyMuPDF.
+Objective:
 
-2. Count total pages.
+Analyze uploaded PDFs before extraction.
 
-3. Detect whether each page is:
+
+Responsibilities:
+
+
+1. Retrieve PDF using job_id.
+
+
+2. Open PDF using PyMuPDF.
+
+
+3. Analyze every page.
+
+
+4. Determine page characteristics:
+
 
    - Native PDF
 
    - Scanned PDF
 
-4. Render every page into PNG.
 
-5. Save pages inside:
+5. Extract metadata:
 
-documents/
-
-    pages/
-
-        job_id/
-
-            page_001.png
-
-            page_002.png
-
-            ...
-
-6. Generate metadata for every page:
 
 - page_number
-
-- image_path
-
-- source_type (NATIVE / SCANNED)
-
-- width
-
-- height
 
 - character_count
 
+- image_count
+
 - image_ratio
+
+- width
+
+- height
+
+- source_type
+
+
+
+6. Store page analysis results in PostgreSQL.
+
 
 Output:
 
-The PDF is transformed into a collection of pages ready
-for preprocessing, classification and OCR.
+
+A complete page inventory ready for:
+
+
+- preprocessing
+
+- OCR
+
+- classification
+
+- extraction
+
+
 
 ==========================================================
-NEXT MAJOR MILESTONE
+LAYER 1 - PDF INSPECTOR IMPLEMENTATION
 ==========================================================
 
-After Layer 1 is fully tested:
+Layer 1 implementation completed.
 
-1. Introduce Redis.
 
-2. Introduce Celery.
+Objective:
 
-3. Move PDF analysis into background workers.
+Analyze uploaded PDF documents before extraction
+and determine the nature of each page.
 
-4. Continue with Layer 2 (OpenCV preprocessing).
+
+Final pipeline:
+
+
+Client
+   │
+POST /api/analyze/{job_id}
+   │
+Retrieve Job from PostgreSQL
+   │
+Download PDF from MinIO
+   │
+Open PDF with PyMuPDF
+   │
+Analyze pages
+   │
+Render pages as PNG images
+   │
+Store page metadata in PostgreSQL
+   │
+Update Job status
+
 
 ==========================================================
-==========================================================
-STEP 8.1 - PAGE MODEL
-==========================================================
+
+Implemented components:
+
+
+1. Analysis API
 
 Created:
 
-app/models/page.py
+app/api/analysis.py
 
-Purpose
 
-Represent one analyzed PDF page inside the backend.
+Responsibilities:
 
-Stored information
+- Receive job_id
+- Retrieve corresponding Job
+- Download PDF from MinIO
+- Launch PDF analysis
+- Return analysis result
+
+
+
+----------------------------------------------------------
+
+
+2. PDF Inspector Service
+
+Created:
+
+app/services/pdf_inspector.py
+
+
+Technology:
+
+PyMuPDF (fitz)
+
+
+Responsibilities:
+
+- Open PDF document
+- Analyze every page
+- Extract page metadata:
+
+
+Extracted information:
+
 
 - page_number
-- source_type
-- char_count
+
+- character_count
+
 - image_count
-- image_coverage_ratio
+
+- image_ratio
+
 - width
+
 - height
+
 - raw_text
 
-==========================================================
-STEP 8.2 - PAGE SCHEMA
-==========================================================
+- source_type
 
-Created:
 
-app/schemas/page_schema.py
 
-Purpose
+Page classification logic:
 
-Expose analyzed page information through the FastAPI API.
 
-The schema mirrors the Page model and will later be returned by the Layer 1 endpoint.
-==========================================================
-STEP 8.3 - PDF ANALYZER
-==========================================================
+If extracted text is significant:
 
-Created:
+    source_type = NATIVE
 
-app/services/pdf_analyzer.py
 
-Purpose
+Otherwise:
 
-Analyze every page of the uploaded PDF.
+    source_type = SCANNED
 
-Responsibilities
 
-- Open PDF using PyMuPDF.
-- Count pages.
-- Extract native text.
-- Count characters.
-- Compute image coverage ratio.
-- Detect page type:
-    • NATIVE
-    • SCANNED
-    • UNKNOWN
 
-Output
+The UNKNOWN state was removed because every page
+must be processed as either native or scanned.
 
-One Page object is produced for every PDF page.
 
-==========================================================
-STEP 8.4 - PAGE RENDERER
-==========================================================
+
+----------------------------------------------------------
+
+
+3. Page Renderer Service
 
 Created:
 
 app/services/page_renderer.py
 
-Purpose
 
-Convert every PDF page into a PNG image.
+Technology:
 
-Responsibilities
+PyMuPDF
 
-- Render pages at 300 DPI.
-- Save page images.
-- Create the pages folder for each job.
 
-Output
+Responsibilities:
+
+
+- Convert each PDF page into PNG image
+- Generate page images at 300 DPI
+- Store images in MinIO
+
+
+Generated structure:
+
 
 documents/
 
@@ -592,7 +851,251 @@ documents/
         job_id/
 
             page_001.png
-            page_002.png
-            ...
 
-These images will become the common input for all subsequent layers of the pipeline.
+            page_002.png
+
+            page_003.png
+
+
+
+----------------------------------------------------------
+
+
+4. Page Database Model
+
+Created:
+
+app/models/page.py
+
+
+Purpose:
+
+
+Store analysis information for each PDF page.
+
+
+Database table:
+
+pages
+
+
+Fields:
+
+
+- id
+
+- job_id
+
+- page_number
+
+- source_type
+
+- character_count
+
+- image_count
+
+- image_ratio
+
+- width
+
+- height
+
+- image_path
+
+- raw_text
+
+
+
+Relationship:
+
+
+Job
+
+  |
+
+  └── pages
+
+
+
+----------------------------------------------------------
+
+
+5. Database Integration
+
+
+Implemented:
+
+
+- Automatic insertion of analyzed pages
+- Relationship between Job and Page
+- Storage of image paths generated by MinIO
+
+
+
+Example:
+
+
+pages table:
+
+
+id | job_id | page_number | source_type | image_path
+
+1  | xxxx   | 1           | NATIVE      | pages/xxxx/page_001.png
+
+2  | xxxx   | 2           | SCANNED     | pages/xxxx/page_002.png
+
+
+
+==========================================================
+
+LAYER 1 TESTING
+==========================================================
+
+
+Analysis endpoint tested successfully.
+
+
+Test:
+
+
+POST:
+
+/api/analyze/{job_id}
+
+
+
+Result:
+
+
+{
+
+    "job_id": "...",
+
+    "pages_analyzed": 3,
+
+    "status": "ANALYZED"
+
+}
+
+
+
+Verification:
+
+
+✓ PDF retrieved successfully from MinIO
+
+✓ Pages analyzed successfully
+
+✓ Native/scanned detection working
+
+✓ PNG pages generated
+
+✓ Images stored in MinIO
+
+✓ Pages table populated in PostgreSQL
+
+✓ Job status updated to ANALYZED
+
+
+
+==========================================================
+
+CURRENT STORAGE ARCHITECTURE
+==========================================================
+
+
+MinIO bucket:
+
+
+documents/
+
+
+Structure:
+
+
+documents/
+
+│
+
+├── pdfs/
+
+│     └── job_id.pdf
+
+│
+
+└── pages/
+
+      └── job_id/
+
+            ├── page_001.png
+
+            ├── page_002.png
+
+            └── page_003.png
+
+
+
+==========================================================
+
+END OF LAYER 1
+==========================================================
+
+
+Layer 1 objectives completed:
+
+
+✓ PDF retrieval implemented
+
+✓ PyMuPDF integration completed
+
+✓ Page inspection implemented
+
+✓ Native/scanned detection implemented
+
+✓ Page rendering implemented
+
+✓ MinIO page storage implemented
+
+✓ PostgreSQL pages table implemented
+
+✓ Job/Page relationship implemented
+
+✓ Complete Layer 1 pipeline tested
+
+
+
+==========================================================
+NEXT DEVELOPMENT PHASE
+==========================================================
+
+
+Layer 2 — Page Classification
+
+
+Objective:
+
+
+Identify the document type of each page:
+
+
+- Bon de Commande (BC)
+
+- Bon de Livraison (BL)
+
+- Facture
+
+
+
+Responsibilities:
+
+
+- Analyze extracted text
+- Detect document keywords
+- Assign document class
+- Store classification result
+- Prepare documents for extraction
+
+
+==========================================================
+END OF DEVELOPMENT LOG
+==========================================================
