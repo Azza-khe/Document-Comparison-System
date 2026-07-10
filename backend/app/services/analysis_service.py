@@ -1,5 +1,6 @@
 from app.services.pdf_inspector import inspect_pdf
 from app.services.page_renderer import render_pages
+from app.services.preprocessor import preprocess_scanned_pages
 
 from app.models.page import Page
 
@@ -11,18 +12,43 @@ def analyze_job(
     pdf_path
 ):
 
-    # Analyse des pages du PDF
+    # =========================
+    # Layer 1
+    # Analyse PDF
+    # native / scanned
+    # =========================
+
     analysis = inspect_pdf(
         pdf_path
     )
 
 
-    # Conversion des pages PDF en images
+    # =========================
+    # Layer 1
+    # PDF -> images dans MinIO
+    # =========================
+
     images = render_pages(
         pdf_path,
         job.job_id
     )
 
+
+    # =========================
+    # Layer 2
+    # Preprocessing uniquement
+    # des pages SCANNED
+    # =========================
+
+    images = preprocess_scanned_pages(
+        analysis,
+        images
+    )
+
+
+    # =========================
+    # Sauvegarde DB
+    # =========================
 
     pages = []
 
@@ -31,6 +57,7 @@ def analyze_job(
         analysis,
         images
     ):
+
 
         page = Page(
 

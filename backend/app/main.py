@@ -3,18 +3,6 @@ from fastapi import FastAPI
 from app.api import upload
 from app.api import analysis
 
-from app.core.database import Base, engine
-
-# Import des modèles pour que SQLAlchemy les connaisse
-import app.models.job
-import app.models.page
-
-
-# Création des tables
-Base.metadata.create_all(
-    bind=engine
-)
-
 
 app = FastAPI(
     title="Document Processing System",

@@ -1099,3 +1099,384 @@ Responsibilities:
 ==========================================================
 END OF DEVELOPMENT LOG
 ==========================================================
+==========================================================
+ALEMBIC DATABASE MIGRATION SETUP
+==========================================================
+
+Objective:
+
+Introduce Alembic as the official database migration system
+for the project.
+
+Reason:
+
+The project database schema will evolve with each processing
+layer (pages, extraction, matching, audit logs...).
+
+Alembic allows:
+
+- Version control of database changes
+- Automatic migration generation from SQLAlchemy models
+- Safe schema evolution without manual SQL changes
+
+
+==========================================================
+ALEMBIC CONFIGURATION
+==========================================================
+
+Installed:
+
+- Alembic
+
+
+Configured:
+
+backend/alembic/
+
+Structure:
+
+backend/
+│
+├── alembic/
+│   ├── versions/
+│   ├── env.py
+│   └── script.py.mako
+│
+└── alembic.ini
+
+
+==========================================================
+SQLALCHEMY INTEGRATION
+==========================================================
+
+Connected Alembic with SQLAlchemy models.
+
+Configured:
+
+app.core.database.Base.metadata
+
+
+Imported models for migration detection:
+
+- Job model
+- Page model
+
+
+Alembic is now able to detect changes made in SQLAlchemy models.
+
+
+==========================================================
+ENVIRONMENT CONFIGURATION
+==========================================================
+
+Connected Alembic to PostgreSQL using environment variables.
+
+Database configuration:
+
+DATABASE_URL
+
+Example:
+
+postgresql://postgres:password@localhost:5432/document_processing
+
+
+MinIO and PostgreSQL configuration remain managed through:
+
+.env
+
+
+==========================================================
+MIGRATION TESTING
+==========================================================
+
+Verified Alembic connection:
+
+
+Command:
+
+alembic current
+
+
+Result:
+
+✓ PostgreSQL connection successful
+
+✓ Alembic context initialized
+
+
+==========================================================
+INITIAL MIGRATION
+==========================================================
+
+Generated initial database migration:
+
+
+Command:
+
+alembic revision --autogenerate \
+-m "initial database structure"
+
+
+Alembic detected database schema changes
+from SQLAlchemy models.
+
+
+==========================================================
+DATABASE RESET AND CLEAN MIGRATION
+==========================================================
+
+Previous tables were created before Alembic integration.
+
+To avoid conflicts between existing database objects
+and migration history:
+
+Removed existing tables:
+
+- jobs
+- pages
+- alembic_version
+
+
+Reason:
+
+Start with a clean migration history managed entirely
+by Alembic.
+
+
+==========================================================
+CURRENT DATABASE MANAGEMENT WORKFLOW
+==========================================================
+
+
+Before:
+
+SQLAlchemy create_all()
+        |
+        |
+ PostgreSQL
+
+
+After:
+
+
+SQLAlchemy Models
+
+        |
+
+     Alembic
+
+        |
+
+ Migration files
+
+        |
+
+ PostgreSQL
+
+
+
+Future database changes will follow:
+
+
+1. Modify SQLAlchemy model
+
+
+2. Generate migration:
+
+
+alembic revision --autogenerate -m "description"
+
+
+3. Apply migration:
+
+
+alembic upgrade head
+
+
+
+==========================================================
+CURRENT STATUS
+==========================================================
+
+✓ Alembic installed
+
+✓ Alembic connected to PostgreSQL
+
+✓ SQLAlchemy models detected
+
+✓ Migration system configured
+
+✓ Database schema management moved to Alembic
+
+
+==========================================================
+NEXT DEVELOPMENT PHASE
+==========================================================
+
+Layer 1 — PDF Inspector
+
+Objectives:
+
+- Retrieve PDF from MinIO using job_id
+- Analyze every PDF page
+- Detect native vs scanned pages
+- Extract page metadata
+- Store analysis results in PostgreSQL
+
+
+==========================================================
+END OF ALEMBIC SETUP
+==========================================================
+==========================================================
+LAYER 2 — PAGE PREPROCESSING
+==========================================================
+
+Objective:
+
+Improve the quality of scanned document pages before
+OCR and page classification.
+
+Only pages identified as SCANNED by Layer 1 are processed.
+Native pages are left unchanged.
+
+==========================================================
+PREPROCESSING PIPELINE
+==========================================================
+
+Implemented image preprocessing using OpenCV.
+
+Processing steps:
+
+1. Download page image from MinIO
+
+2. Decode image bytes into an OpenCV image
+
+3. Convert image to grayscale
+
+4. Apply Gaussian Blur to reduce image noise
+
+5. Correct small page rotations (deskew)
+
+6. Apply Otsu thresholding to obtain a clean
+   black-and-white image
+
+7. Encode the processed image as PNG
+
+8. Replace the existing page image in MinIO
+   with the preprocessed version
+
+==========================================================
+MINIO INTEGRATION
+==========================================================
+
+The preprocessing pipeline works directly with MinIO.
+
+Added storage functions:
+
+- download_image()
+- update_page_image()
+
+Workflow:
+
+MinIO
+    │
+    ▼
+Download image
+    │
+    ▼
+OpenCV preprocessing
+    │
+    ▼
+Replace image in MinIO
+
+The object path remains unchanged.
+
+Example:
+
+pages/{job_id}/page_001.png
+
+Only the image content is updated.
+
+==========================================================
+ANALYSIS SERVICE INTEGRATION
+==========================================================
+
+Integrated Layer 2 into the document analysis workflow.
+
+Current processing pipeline:
+
+inspect_pdf()
+        │
+        ▼
+render_pages()
+        │
+        ▼
+preprocess_scanned_pages()
+        │
+        ▼
+Store page metadata in PostgreSQL
+
+The preprocessing step is executed only for pages
+whose source_type is SCANNED.
+
+==========================================================
+CURRENT PREPROCESSING FEATURES
+==========================================================
+
+Implemented:
+
+✓ Grayscale conversion
+
+✓ Noise reduction (Gaussian Blur)
+
+✓ Automatic deskew (rotation correction)
+
+✓ Black-and-white binarization (Otsu)
+
+Not implemented yet:
+
+- Border removal
+
+- Adaptive thresholding
+
+- Contrast enhancement
+
+- Shadow removal
+
+- Perspective correction
+
+These improvements will be added in future iterations.
+
+==========================================================
+CURRENT STATUS
+==========================================================
+
+✓ Layer 2 architecture completed
+
+✓ OpenCV preprocessing implemented
+
+✓ MinIO integration completed
+
+✓ Automatic replacement of processed images
+
+✓ Integrated into analysis workflow
+
+==========================================================
+NEXT DEVELOPMENT PHASE
+==========================================================
+
+Layer 3 — Page Classification
+
+Objectives:
+
+- Detect document type (BC, BL, FACTURE)
+
+- Rule-based classification using regex and keywords
+
+- AI fallback for uncertain pages
+
+- Confidence score generation
+
+==========================================================
+END OF LAYER 2
+==========================================================
