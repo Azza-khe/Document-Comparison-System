@@ -79,7 +79,32 @@ class Page(Base):
     )
 
 
+    # ==================================================
+    # Layer 3 - Page Classification
+    # ==================================================
+
+
+    document_type = Column(
+        String,
+        nullable=True
+    )
+
+
+    classification_confidence = Column(
+        Float,
+        nullable=True
+    )
+
+
+    classification_source = Column(
+        String,
+        nullable=True
+    )
+
+
+    # ==================================================
     # Relation avec Job
+    # ==================================================
 
     job = relationship(
         "Job",

@@ -2,6 +2,10 @@ from app.services.pdf_inspector import inspect_pdf
 from app.services.page_renderer import render_pages
 from app.services.preprocessor import preprocess_scanned_pages
 
+from app.services.ocr_service import process_ocr
+
+from app.services.classification_service import classify_pages
+
 from app.models.page import Page
 
 
@@ -11,6 +15,7 @@ def analyze_job(
     job,
     pdf_path
 ):
+
 
     # =========================
     # Layer 1
@@ -23,9 +28,9 @@ def analyze_job(
     )
 
 
+
     # =========================
-    # Layer 1
-    # PDF -> images dans MinIO
+    # Conversion PDF -> images
     # =========================
 
     images = render_pages(
@@ -34,10 +39,10 @@ def analyze_job(
     )
 
 
+
     # =========================
     # Layer 2
-    # Preprocessing uniquement
-    # des pages SCANNED
+    # Preprocessing scans
     # =========================
 
     images = preprocess_scanned_pages(
@@ -46,8 +51,9 @@ def analyze_job(
     )
 
 
+
     # =========================
-    # Sauvegarde DB
+    # Création Pages
     # =========================
 
     pages = []
@@ -75,6 +81,38 @@ def analyze_job(
         pages.append(page)
 
 
+
+    db.commit()
+
+
+
+    # =========================
+    # OCR Layer
+    # uniquement SCANNED
+    # =========================
+
+    pages = process_ocr(
+        db,
+        pages
+    )
+
+
+
+    # =========================
+    # Layer 3
+    # Classification
+    # =========================
+
+    pages = classify_pages(
+        db,
+        pages
+    )
+
+
+
+    # =========================
+    # Job terminé
+    # =========================
 
     job.status = "ANALYZED"
 
