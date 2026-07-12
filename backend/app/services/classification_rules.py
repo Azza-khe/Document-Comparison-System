@@ -2,30 +2,80 @@ RULES = {
 
     "BC": [
 
-        (r"\bBON\s+DE\s+COMMANDE\b", 5),
-        (r"\bCOMMANDE\s+N[°O]?\b", 3),
-        (r"\bBC[-/]", 2),
-        (r"\bN[°O]?\s*BC\b", 2)
+        {
+            "pattern": r"\bBON\s+DE\s+COMMANDE\b",
+            "weight": 5
+        },
+
+        {
+            "pattern": r"\bCOMMANDE\s+N[°O]?\b",
+            "weight": 3
+        },
+
+        {
+            "pattern": r"\bN[°O]?\s*BC\b",
+            "weight": 2
+        },
+
+        {
+            "pattern": r"\bBC[-/ ]?\d+\b",
+            "weight": 2
+        }
 
     ],
 
 
     "BL": [
 
-        (r"\bBON\s+DE\s+LIVRAISON\b", 5),
-        (r"\bLIVRAISON\s+N[°O]?\b", 3),
-        (r"\bBL[-/]", 2),
-        (r"\bN[°O]?\s*BL\b", 2)
+        {
+            "pattern": r"\bBON\s+DE\s+LIVRAISON\b",
+            "weight": 5
+        },
+
+        {
+            "pattern": r"\bBON\s+LIVRAISON\b",
+            "weight": 4
+        },
+
+        {
+            "pattern": r"\bN[°O]?\s*BL\b",
+            "weight": 2
+        },
+
+        {
+            "pattern": r"\bBL[-/ ]?\d+\b",
+            "weight": 2
+        }
 
     ],
 
 
     "FACTURE": [
 
-        (r"\bFACTURE\b", 5),
-        (r"\bINVOICE\b", 5),
-        (r"\bFA[-/]", 2),
-        (r"\bN[°O]?\s*FACTURE\b", 3)
+        {
+            "pattern": r"\bFACTURE\b",
+            "weight": 5
+        },
+
+        {
+            "pattern": r"\bINVOICE\b",
+            "weight": 5
+        },
+
+        {
+            "pattern": r"\bAVOIR\b",
+            "weight": 4
+        },
+
+        {
+            "pattern": r"\bN[°O]?\s*FAC\b",
+            "weight": 3
+        },
+
+        {
+            "pattern": r"\bFA[-/ ]?\d+\b",
+            "weight": 2
+        }
 
     ]
 

@@ -1,33 +1,28 @@
+from PIL import Image
+from io import BytesIO
 import pytesseract
 
-from PIL import Image
+from app.services.storage import download_image
 
-from io import BytesIO
-
-
-
-# Chemin Tesseract Windows
 
 pytesseract.pytesseract.tesseract_cmd = (
     r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 )
 
 
+def extract_text_from_image(image_path: str):
 
-def extract_text_from_image(
-    image_bytes: bytes
-):
-
+    image_bytes = download_image(
+        image_path
+    )
 
     image = Image.open(
         BytesIO(image_bytes)
     )
-
 
     text = pytesseract.image_to_string(
         image,
         lang="fra"
     )
 
-
-    return text.strip()
+    return text

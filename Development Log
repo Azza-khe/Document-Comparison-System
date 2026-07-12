@@ -309,6 +309,7 @@ MinIO API                9000      ✓ Running
 MinIO Console            9001      ✓ Running
 PostgreSQL               5432      ✓ Running
 Redis                    6379      Planned
+
 Celery Worker            ----      Planned
 
 
@@ -1480,3 +1481,405 @@ Objectives:
 ==========================================================
 END OF LAYER 2
 ==========================================================
+==========================================================
+LAYER 3 — PAGE CLASSIFICATION
+==========================================================
+
+
+OBJECTIVE
+==========================================================
+
+The objective of Layer 3 is to automatically classify each
+PDF page into its corresponding document type after the PDF
+analysis phase.
+
+Supported document types:
+
+- BC (Bon de Commande)
+
+- BL (Bon de Livraison)
+
+- FACTURE
+
+
+
+==========================================================
+IMPLEMENTATION
+==========================================================
+
+
+✓ Rule-based page classifier implemented
+
+
+The classifier analyzes the extracted text of each page
+and determines the document type using keywords and scoring
+rules.
+
+
+
+Implemented files:
+
+
+app/services/
+
+    ├── classifier.py
+
+    ├── rule_classifier.py
+
+    └── classification_service.py
+
+
+
+==========================================================
+CLASSIFICATION METHOD
+==========================================================
+
+
+The classification is based on a scoring system.
+
+
+For each page, the system calculates scores for:
+
+
+BC:
+
+- BON DE COMMANDE
+
+- Référence commande
+
+- Prix unitaire
+
+- Montant HT
+
+
+
+BL:
+
+- BON DE LIVRAISON
+
+- Quantité livrée
+
+- Livraison conforme
+
+- Signature livreur
+
+
+
+FACTURE:
+
+- FACTURE
+
+- TVA
+
+- Total TTC
+
+- Échéance
+
+
+
+The document type with the highest score is selected.
+
+
+
+Example:
+
+
+Input:
+
+"BON DE LIVRAISON
+
+Quantité livrée
+
+Signature livreur"
+
+
+Scores:
+
+
+BC        : 2
+
+BL        : 7
+
+FACTURE : 0
+
+
+Result:
+
+
+Document type = BL
+
+
+
+==========================================================
+CONFIDENCE SCORE
+==========================================================
+
+
+A confidence score is generated after classification.
+
+
+Example:
+
+
+Document type:
+
+BL
+
+
+Confidence:
+
+95%
+
+
+The classification source is stored:
+
+
+classification_source = RULE
+
+
+
+==========================================================
+DATABASE INTEGRATION
+==========================================================
+
+
+After classification, the Page entity is updated with:
+
+
+- document_type
+
+- classification_confidence
+
+- classification_source
+
+
+
+Example:
+
+
+Before:
+
+
+page_id | document_type
+
+-----------------------
+
+25      | NULL
+
+
+
+After:
+
+
+page_id | document_type | confidence | source
+
+------------------------------------------------
+
+25      | BL            | 0.95       | RULE
+
+
+
+==========================================================
+INTEGRATION INTO WORKFLOW
+==========================================================
+
+
+Layer 3 was integrated into the analysis pipeline.
+
+
+Workflow:
+
+
+PDF Upload
+
+      |
+
+PDF Inspection
+
+      |
+
+Page Creation
+
+      |
+
+Page Classification
+
+      |
+
+Database Update
+
+
+
+==========================================================
+TESTING
+==========================================================
+
+
+Test PDF:
+
+
+Page 1:
+
+BON DE COMMANDE
+
+
+Result:
+
+BC
+
+
+Page 2:
+
+BON DE LIVRAISON
+
+
+Result:
+
+BL
+
+
+Page 3:
+
+FACTURE
+
+
+Result:
+
+FACTURE
+
+
+
+Classification result:
+
+
+✓ Page 1 classified correctly
+
+✓ Page 2 classified correctly
+
+✓ Page 3 classified correctly
+
+
+
+==========================================================
+END OF LAYER 3
+==========================================================
+NOTE ARCHITECTURE:
+
+Current implementation renders all PDF pages to images
+for pipeline consistency.
+
+Future optimization:
+Native PDF pages should bypass image rendering and OCR.
+Only scanned pages should follow:
+
+PDF → Image rendering → OpenCV preprocessing → OCR.
+
+This respects the Native-first, OCR-second principle.
+## Development Log
+
+### Layer 3 — Page Classification
+
+Implemented a complete three-tier page classification pipeline.
+
+#### Rule-Based Classifier (Tier 1)
+
+Implemented a deterministic classifier using:
+
+* keyword detection in the document header
+* regular expressions for document references
+* table density heuristic
+* confidence score computation
+
+The classifier identifies:
+
+* Purchase Orders (BC)
+* Delivery Notes (BL)
+* Invoices (FACTURE)
+
+When the confidence is greater than or equal to **0.90**, the page is classified immediately.
+
+---
+
+#### AI Classifier Stub (Tier 2)
+
+Added the architecture for the AI fallback classifier.
+
+Current implementation contains a placeholder returning a structured response compatible with the future LLM integration.
+
+The returned structure contains:
+
+* detected document type
+* confidence
+* source
+* reasoning
+
+This allows replacing the implementation later with an LLM without changing the pipeline.
+
+---
+
+#### Human Review Queue (Tier 3)
+
+Implemented the Human Review fallback.
+
+When neither the rule-based classifier nor the AI classifier reaches the required confidence:
+
+* the page is classified as **UNKNOWN**
+* a review task is created
+* the page is inserted into the **review_queue** table
+* the page status becomes **PENDING**
+* the classification source is stored as **HUMAN_REVIEW**
+
+This prepares the future operator interface.
+
+---
+
+### Layer 4 — Page Grouping
+
+Implemented the document assembly stage.
+
+Pages are no longer treated independently.
+
+The grouping service now:
+
+* groups consecutive pages of the same document type
+* detects continuation pages using:
+
+  * "Page X sur Y"
+  * "Page X of Y"
+  * "Suite"
+  * "Continuation"
+* extracts a document reference (ref_hint) using regular expressions
+* computes a grouping confidence
+* creates logical document groups
+
+---
+
+### Database Changes
+
+Created new entities:
+
+* ReviewQueue
+* DocumentGroup
+* DocumentGroupPage
+
+Configured SQLAlchemy relationships.
+
+Generated and applied Alembic migrations.
+
+---
+
+### Pipeline Integration
+
+The complete processing pipeline is now:
+
+1. Upload PDF
+2. Store original PDF in MinIO
+3. Analyze PDF pages
+4. Detect Native / Scanned pages
+5. OCR for scanned pages
+6. Page Classification
+7. Human Review creation when necessary
+8. Document Grouping
+9. Store document groups in the database
+
+The output of Layer 4 is a collection of logical document groups ready for the extraction stage.

@@ -9,51 +9,93 @@ from dotenv import load_dotenv
 import os
 
 
-# Charger les variables .env
+# =====================================================
+# Charger les modèles SQLAlchemy
+# =====================================================
+
+from app.core.database import Base
+
+from app.models.job import Job
+from app.models.page import Page
+from app.models.review_queue import ReviewQueue
+from app.models.document_group import DocumentGroup
+from app.models.document_group_page import DocumentGroupPage
+
+
+# =====================================================
+# Charger .env
+# =====================================================
+
 load_dotenv()
 
 
-# Alembic Config object
+# =====================================================
+# Configuration Alembic
+# =====================================================
+
 config = context.config
 
 
-# Charger DATABASE_URL depuis .env
 config.set_main_option(
     "sqlalchemy.url",
     os.getenv("DATABASE_URL")
 )
 
 
-# Configuration logging Alembic
+# =====================================================
+# Logging
+# =====================================================
+
 if config.config_file_name is not None:
-    fileConfig(config.config_file_name)
+
+    fileConfig(
+        config.config_file_name
+    )
 
 
-# Import des modèles SQLAlchemy
-from app.core.database import Base
+# =====================================================
+# Import obligatoire des modèles
+# pour Alembic autogenerate
+# =====================================================
 
 import app.models.job
 import app.models.page
+import app.models.review_queue
+import app.models.document_group
+import app.models.document_group_page
 
 
-# Metadata utilisée par Alembic autogenerate
+
+# Metadata utilisée par Alembic
+
 target_metadata = Base.metadata
 
 
 
+# =====================================================
+# Migration OFFLINE
+# =====================================================
+
 def run_migrations_offline() -> None:
+
 
     url = config.get_main_option(
         "sqlalchemy.url"
     )
 
+
     context.configure(
+
         url=url,
+
         target_metadata=target_metadata,
+
         literal_binds=True,
+
         dialect_opts={
             "paramstyle": "named"
         },
+
     )
 
 
@@ -62,6 +104,10 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
+
+# =====================================================
+# Migration ONLINE
+# =====================================================
 
 def run_migrations_online() -> None:
 
@@ -76,6 +122,7 @@ def run_migrations_online() -> None:
         prefix="sqlalchemy.",
 
         poolclass=pool.NullPool,
+
     )
 
 
@@ -86,7 +133,7 @@ def run_migrations_online() -> None:
 
             connection=connection,
 
-            target_metadata=target_metadata
+            target_metadata=target_metadata,
 
         )
 
@@ -96,6 +143,10 @@ def run_migrations_online() -> None:
             context.run_migrations()
 
 
+
+# =====================================================
+# Execution
+# =====================================================
 
 if context.is_offline_mode():
 
