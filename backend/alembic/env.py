@@ -20,6 +20,9 @@ from app.models.page import Page
 from app.models.review_queue import ReviewQueue
 from app.models.document_group import DocumentGroup
 from app.models.document_group_page import DocumentGroupPage
+from app.models.extracted_document import ExtractedDocument
+from app.models.extracted_document import ExtractedDocument
+from app.models.extracted_item import ExtractedItem
 
 
 # =====================================================
@@ -63,7 +66,9 @@ import app.models.page
 import app.models.review_queue
 import app.models.document_group
 import app.models.document_group_page
-
+import app.models.extracted_document
+import app.models.extracted_document
+import app.models.extracted_item
 
 
 # Metadata utilisée par Alembic

@@ -11,7 +11,6 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 
 
-
 class DocumentGroup(Base):
 
     __tablename__ = "document_groups"
@@ -52,4 +51,12 @@ class DocumentGroup(Base):
     pages = relationship(
         "DocumentGroupPage",
         back_populates="group"
+    )
+
+
+    extracted_document = relationship(
+        "ExtractedDocument",
+        back_populates="group",
+        uselist=False,
+        cascade="all, delete-orphan"
     )

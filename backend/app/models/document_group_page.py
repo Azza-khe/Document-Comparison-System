@@ -8,8 +8,6 @@ from sqlalchemy.orm import relationship
 
 from app.core.database import Base
 
-
-
 class DocumentGroupPage(Base):
 
     __tablename__ = "document_group_pages"
@@ -40,4 +38,9 @@ class DocumentGroupPage(Base):
     group = relationship(
         "DocumentGroup",
         back_populates="pages"
+    )
+
+
+    page = relationship(
+        "Page"
     )

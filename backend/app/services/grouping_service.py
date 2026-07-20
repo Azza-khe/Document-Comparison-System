@@ -126,4 +126,9 @@ def group_pages(
 
     db.commit()
 
+    for group in saved_groups:
+
+      db.refresh(group)
+
+
     return saved_groups
